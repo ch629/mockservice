@@ -5,26 +5,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/ch629/mockservice/pkg/domain"
 )
 
-// TODO: Cookies
-// TODO: Form data
-// TODO: Auth
-type Request struct {
-	Body            io.ReadCloser
-	QueryParameters map[string][]string
-	Headers         map[string][]string
-	Path            string
-	Method          string
-}
-
-func RequestFromHTTP(r http.Request) Request {
-	return Request{
+func RequestFromHTTP(r http.Request) domain.Request {
+	bs, _ := io.ReadAll(r.Body)
+	r.Body.Close()
+	return domain.Request{
 		QueryParameters: r.URL.Query(),
 		Path:            r.URL.Path,
 		Headers:         r.Header,
 		Method:          r.Method,
-		Body:            r.Body,
+		Body:            bs,
 	}
 }
 

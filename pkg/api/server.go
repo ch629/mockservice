@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ch629/mockservice/pkg/config"
+	"github.com/ch629/mockservice/pkg/recorder"
 	"github.com/ch629/mockservice/pkg/stub"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -18,16 +19,18 @@ type Server interface {
 
 type server struct {
 	router *mux.Router
-	logger *zap.Logger
+	log    *zap.Logger
 
-	stubService stub.Service
+	stubService     stub.Service
+	recorderService recorder.Service
 }
 
-func New(logger *zap.Logger, stubService stub.Service) Server {
+func New(log *zap.Logger, stubService stub.Service, recorderService recorder.Service) Server {
 	s := &server{
-		router:      mux.NewRouter(),
-		logger:      logger,
-		stubService: stubService,
+		router:          mux.NewRouter(),
+		log:             log,
+		stubService:     stubService,
+		recorderService: recorderService,
 	}
 	s.registerRoutes()
 	return s
@@ -44,12 +47,12 @@ func (s *server) Start(ctx context.Context, cfg config.API) {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
-			s.logger.Warn("server shutdown", zap.Error(err))
+			s.log.Warn("server shutdown", zap.Error(err))
 		}
 	}()
 	<-ctx.Done()
 	// TODO: Deadline on shutdown ctx?
 	if err := server.Shutdown(context.Background()); err != nil {
-		s.logger.Error("failed to shutdown", zap.Error(err))
+		s.log.Error("failed to shutdown", zap.Error(err))
 	}
 }

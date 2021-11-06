@@ -26,6 +26,11 @@ func (s *server) registerRoutes() {
 			Handler: s.deleteDefinition(),
 			Method:  http.MethodDelete,
 		},
+		{
+			Path:    "/request",
+			Handler: s.requests(),
+			Method:  http.MethodGet,
+		},
 	} {
 		adminRouter.
 			HandleFunc(route.Path, route.Handler).
