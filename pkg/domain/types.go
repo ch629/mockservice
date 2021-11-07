@@ -4,9 +4,9 @@ package domain
 // TODO: Form data
 // TODO: Auth
 type Request struct {
-	QueryParameters map[string][]string
-	Headers         map[string][]string
-	Path            string
-	Method          string
-	Body            []byte
+	QueryParameters map[string][]string `json:"query_parameters"`
+	Headers         map[string][]string `json:"headers"`
+	Path            string              `json:"path"`
+	Method          string              `json:"method"`
+	Body            []byte              `json:"body"`
 }

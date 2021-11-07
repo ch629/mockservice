@@ -12,6 +12,7 @@ import (
 
 var ErrNoDefinition = errors.New("no definition")
 
+//go:generate mockgen -destination=stub_mocks/mock_stub.go -package=stub_mocks . Service
 // TODO: Separate stubs from HTTP logic?
 type Service interface {
 	http.Handler
@@ -82,17 +83,19 @@ func (s *service) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := RequestFromHTTP(*r)
-	// TODO: Should this be async?
-	go s.recorder.Record(req)
+	s.recorder.Record(req)
 	s.mux.RLock()
 	defer s.mux.RUnlock()
-	for _, def := range s.definitions {
+	for id, def := range s.definitions {
 		if def.Request.Matches(req) {
+			s.recorder.RecordStub(id)
 			if err := def.Response.WriteTo(rw); err != nil {
 				s.log.Error("failed to write response back", zap.Error(err))
 			}
 			return
 		}
 	}
+	// TODO: No stub found response
+	rw.WriteHeader(http.StatusNoContent)
 	s.log.Info("didn't find any stub for", zap.String("path", req.Path))
 }

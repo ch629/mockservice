@@ -3,12 +3,14 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/ch629/mockservice/pkg/domain"
+	"github.com/ch629/mockservice/pkg/recorder"
 	"github.com/ch629/mockservice/pkg/stub"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 )
 
 // GET /definition
@@ -34,10 +36,7 @@ func (s *server) listDefinitions() http.HandlerFunc {
 			}
 		}
 
-		rw.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(rw).Encode(resp); err != nil {
-			s.log.Error("failed to encode definitions to ResponseWriter", zap.Error(err))
-		}
+		s.writeJSON(rw, resp, http.StatusOK)
 	}
 }
 
@@ -53,7 +52,7 @@ func (s *server) registerDefinition() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var req request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			s.writeError(rw, fmt.Errorf("received invalid payload: %s", err), http.StatusBadRequest)
 			return
 		}
 
@@ -66,12 +65,7 @@ func (s *server) registerDefinition() http.HandlerFunc {
 				Status:  http.StatusOK,
 			},
 		})
-		rw.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(rw).Encode(response{
-			ID: id,
-		}); err != nil {
-			s.log.Error("failed to encode id to ResponseWriter", zap.Error(err))
-		}
+		s.writeJSON(rw, response{id}, http.StatusOK)
 	}
 }
 
@@ -81,14 +75,13 @@ func (s *server) deleteDefinition() http.HandlerFunc {
 		params := mux.Vars(r)
 		id, err := uuid.Parse(params["id"])
 		if err != nil {
-			// TODO : Invalid uuid
-			rw.WriteHeader(http.StatusBadRequest)
+			s.writeError(rw, fmt.Errorf("received invalid id: %s", err), http.StatusBadRequest)
 			return
 		}
 		_, err = s.stubService.RemoveStub(id)
 		if err != nil {
 			if errors.Is(err, stub.ErrNoDefinition) {
-				rw.WriteHeader(http.StatusNotFound)
+				s.writeError(rw, fmt.Errorf("no stub found with ID: '%s'", id), http.StatusNotFound)
 				return
 			}
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -100,11 +93,22 @@ func (s *server) deleteDefinition() http.HandlerFunc {
 
 // GET /request
 func (s *server) requests() http.HandlerFunc {
+	type response struct {
+		Requests []domain.Request `json:"requests"`
+	}
+
 	return func(rw http.ResponseWriter, _ *http.Request) {
-		requests := s.recorderService.Requests()
-		rw.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(rw).Encode(requests); err != nil {
-			s.log.Error("failed to encode requests to ResponseWriter", zap.Error(err))
-		}
+		s.writeJSON(rw, response{s.recorderService.Requests()}, http.StatusOK)
+	}
+}
+
+// GET /stubs
+func (s *server) stubCounts() http.HandlerFunc {
+	type response struct {
+		Stubs []recorder.StubRecord `json:"stubs"`
+	}
+
+	return func(rw http.ResponseWriter, _ *http.Request) {
+		s.writeJSON(rw, response{s.recorderService.Stubs()}, http.StatusOK)
 	}
 }

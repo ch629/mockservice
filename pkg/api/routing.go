@@ -8,32 +8,37 @@ func (s *server) registerRoutes() {
 	// Admin routes
 	for _, route := range []struct {
 		Path    string
-		Handler http.HandlerFunc
+		Handler func() http.HandlerFunc
 		Method  string
 	}{
 		{
 			Path:    "/definition",
-			Handler: s.listDefinitions(),
+			Handler: s.listDefinitions,
 			Method:  http.MethodGet,
 		},
 		{
 			Path:    "/definition",
-			Handler: s.registerDefinition(),
+			Handler: s.registerDefinition,
 			Method:  http.MethodPost,
 		},
 		{
 			Path:    "/definition/{id}",
-			Handler: s.deleteDefinition(),
+			Handler: s.deleteDefinition,
 			Method:  http.MethodDelete,
 		},
 		{
 			Path:    "/request",
-			Handler: s.requests(),
+			Handler: s.requests,
+			Method:  http.MethodGet,
+		},
+		{
+			Path:    "/stubs",
+			Handler: s.stubCounts,
 			Method:  http.MethodGet,
 		},
 	} {
 		adminRouter.
-			HandleFunc(route.Path, route.Handler).
+			HandleFunc(route.Path, route.Handler()).
 			Methods(route.Method)
 	}
 
