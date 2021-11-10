@@ -18,13 +18,17 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	// Logger
-	devCfg := zap.NewDevelopmentConfig()
-	devCfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	devCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	log, err := devCfg.Build()
-	if err != nil {
-		panic(fmt.Errorf("failed to create logger: %w", err))
+	// Setup Logger
+	var log *zap.Logger
+	{
+		var err error
+		devCfg := zap.NewDevelopmentConfig()
+		devCfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		devCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		log, err = devCfg.Build()
+		if err != nil {
+			panic(fmt.Errorf("failed to create logger: %w", err))
+		}
 	}
 
 	// Dependencies

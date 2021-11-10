@@ -55,20 +55,15 @@ func (m *simpleMatcher) UnmarshalJSON(bs []byte) error {
 		if err != nil {
 			return fmt.Errorf("creating RegexMatcher: %w", err)
 		}
-		simpleM := reg.(*simpleMatcher)
-		*m = *simpleM
+		*m = *reg.(*simpleMatcher)
 	case catchAll.EqualTo != "":
-		equalTo := EqualToMatcher(catchAll.EqualTo).(*simpleMatcher)
-		*m = *equalTo
+		*m = *EqualToMatcher(catchAll.EqualTo).(*simpleMatcher)
 	case catchAll.Contains != "":
-		contains := ContainsWithMatcher(catchAll.Contains).(*simpleMatcher)
-		*m = *contains
+		*m = *ContainsWithMatcher(catchAll.Contains).(*simpleMatcher)
 	case catchAll.StartsWith != "":
-		startsWith := StartsWithMatcher(catchAll.StartsWith).(*simpleMatcher)
-		*m = *startsWith
+		*m = *StartsWithMatcher(catchAll.StartsWith).(*simpleMatcher)
 	case catchAll.EndsWith != "":
-		endsWith := EndsWithMatcher(catchAll.EndsWith).(*simpleMatcher)
-		*m = *endsWith
+		*m = *EndsWithMatcher(catchAll.EndsWith).(*simpleMatcher)
 	default:
 		return errors.New("unknown key")
 	}

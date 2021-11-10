@@ -43,8 +43,17 @@ func (s *server) listDefinitions() http.HandlerFunc {
 
 // POST /definition
 func (s *server) registerDefinition() http.HandlerFunc {
+	// TODO: validation
 	type request struct {
-		Path string `json:"path"`
+		Request struct {
+			Path   json.RawMessage `json:"path"`
+			Method json.RawMessage `json:"method"`
+		} `json:"request"`
+		Response struct {
+			Headers map[string]string `json:"headers"`
+			Body    json.RawMessage   `json:"body"`
+			Status  int               `json:"status"`
+		} `json:"response"`
 	}
 	type response struct {
 		ID uuid.UUID `json:"id"`
@@ -57,13 +66,19 @@ func (s *server) registerDefinition() http.HandlerFunc {
 			return
 		}
 
+		fieldMatcher, err := matching.UnmarshalJSONToFieldMatcher(req.Request.Path)
+		if err != nil {
+			s.writeError(rw, err, http.StatusBadRequest)
+			return
+		}
+
 		id := s.stubService.AddStub(stub.Definition{
-			Request: stub.NewLoggedMatcher(s.log, stub.NewPathMatcher(matching.EqualToMatcher(req.Path))),
+			Request: stub.NewLoggedMatcher(s.log, stub.NewPathMatcher(fieldMatcher)),
 			ID:      uuid.New(),
 			Response: stub.Response{
-				Headers: map[string]string{},
-				Body:    []byte(`{"foo": "bar"}`),
-				Status:  http.StatusOK,
+				Headers: req.Response.Headers,
+				Body:    req.Response.Body,
+				Status:  req.Response.Status,
 			},
 		})
 		s.writeJSON(rw, response{id}, http.StatusOK)

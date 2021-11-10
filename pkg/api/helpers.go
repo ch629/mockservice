@@ -18,8 +18,8 @@ func (s *server) writeJSON(rw http.ResponseWriter, value interface{}, status int
 
 func (s *server) writeError(rw http.ResponseWriter, err error, status int) {
 	type response struct {
-		Error error `json:"error"`
+		Error string `json:"error"`
 	}
 
-	s.writeJSON(rw, response{err}, status)
+	s.writeJSON(rw, response{err.Error()}, status)
 }

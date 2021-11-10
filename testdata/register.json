@@ -1,0 +1,13 @@
+{
+  "request": {
+    "path": {
+      "equal_to": "/abc"
+    }
+  },
+  "response": {
+    "body": {
+      "foo": "bar"
+    },
+    "status": 200
+  }
+}
