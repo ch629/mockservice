@@ -8,6 +8,7 @@ import (
 
 	"github.com/ch629/mockservice/pkg/recorder/recorder_mocks"
 	"github.com/ch629/mockservice/pkg/stub"
+	"github.com/ch629/mockservice/pkg/stub/matching"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -86,7 +87,7 @@ func Test_service_Handler(t *testing.T) {
 			},
 			stubs: []stub.Definition{
 				{
-					Request: stub.NewPathMatcher("/abc"),
+					Request: stub.NewPathMatcher(matching.EqualToMatcher("/abc")),
 					Response: stub.Response{
 						Headers: map[string]string{},
 						Body:    []byte(`{"foo": "bar"}`),

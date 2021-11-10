@@ -9,6 +9,7 @@ import (
 	"github.com/ch629/mockservice/pkg/domain"
 	"github.com/ch629/mockservice/pkg/recorder"
 	"github.com/ch629/mockservice/pkg/stub"
+	"github.com/ch629/mockservice/pkg/stub/matching"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -16,8 +17,8 @@ import (
 // GET /definition
 func (s *server) listDefinitions() http.HandlerFunc {
 	type definitionDto struct {
-		Request json.RawMessage `json:"request"`
-		ID      uuid.UUID       `json:"id"`
+		Request stub.RequestMatcher `json:"request"`
+		ID      uuid.UUID           `json:"id"`
 	}
 	type response struct {
 		Definitions []definitionDto `json:"definitions"`
@@ -32,7 +33,7 @@ func (s *server) listDefinitions() http.HandlerFunc {
 		for idx, def := range definitions {
 			resp.Definitions[idx] = definitionDto{
 				ID:      def.ID,
-				Request: json.RawMessage(def.Request.String()),
+				Request: def.Request,
 			}
 		}
 
@@ -57,7 +58,7 @@ func (s *server) registerDefinition() http.HandlerFunc {
 		}
 
 		id := s.stubService.AddStub(stub.Definition{
-			Request: stub.NewLoggedMatcher(s.log, stub.NewPathMatcher(req.Path)),
+			Request: stub.NewLoggedMatcher(s.log, stub.NewPathMatcher(matching.EqualToMatcher(req.Path))),
 			ID:      uuid.New(),
 			Response: stub.Response{
 				Headers: map[string]string{},
