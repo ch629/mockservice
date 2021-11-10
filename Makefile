@@ -10,6 +10,9 @@ generate:
 test:
 	go test -v -race -timeout=10s ./...
 
+integration-test:
+	go test -v -timeout=10s ./test/...
+
 docker-build:
 	docker build -t mockserver .
 
