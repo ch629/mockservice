@@ -92,6 +92,7 @@ func (s *service) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if err := def.Response.WriteTo(rw); err != nil {
 				s.log.Error("failed to write response back", zap.Error(err))
 			}
+			s.log.Debug("request matched", zap.Stringer("stub", id))
 			return
 		}
 	}
