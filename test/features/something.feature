@@ -1,3 +1,18 @@
 Feature: Testing
     Scenario: Foo
-        Given something happens
+        Given a definition is registered with payload
+        """
+        {
+          "request": {
+            "path": {
+              "equal_to": "/abc"
+            }
+          },
+          "response": {
+            "body": {
+              "foo": "bar"
+            },
+            "status": 200
+          }
+        }
+        """

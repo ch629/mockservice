@@ -6,16 +6,20 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
 	"github.com/spf13/pflag"
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var opts = godog.Options{
 	Output: colors.Colored(os.Stdout),
+	Format: "pretty",
 }
 
 func init() {
@@ -26,7 +30,15 @@ func TestMain(m *testing.M) {
 	pflag.Parse()
 	opts.Paths = pflag.Args()
 
-	suiteCtx := &suiteContext{}
+	cfg := zap.NewDevelopmentConfig()
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	log, err := cfg.Build()
+	if err != nil {
+		panic(fmt.Errorf("failed to create logger: %w", err))
+	}
+	suiteCtx := &suiteContext{
+		log: log,
+	}
 	status := godog.TestSuite{
 		Name:                 "mockservice",
 		TestSuiteInitializer: suiteCtx.InitializeTestSuite,
@@ -38,39 +50,50 @@ func TestMain(m *testing.M) {
 }
 
 type suiteContext struct {
-	mockServiceUri string
+	container      tc.Container
+	log            *zap.Logger
+	mockServiceURI string
 }
 
 func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 	ctx.BeforeSuite(func() {
-		// TODO: use compose instead? - https://golang.testcontainers.org/features/docker_compose/
-		containerRequest := testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
+		containerRequest := tc.ContainerRequest{
+			FromDockerfile: tc.FromDockerfile{
 				Context: "../",
 			},
 			ExposedPorts: []string{"8080:8080"},
 			// WaitingFor:   wait.ForHTTP("/admin/definition"),
 		}
 
-		container, err := testcontainers.GenericContainer(context.TODO(), testcontainers.GenericContainerRequest{
+		container, err := tc.GenericContainer(context.TODO(), tc.GenericContainerRequest{
 			ContainerRequest: containerRequest,
 			Started:          true,
 		})
 		if err != nil {
-			panic(err)
+			c.log.Fatal("Failed to create container", zap.Error(err))
 		}
+
+		c.container = container
 
 		ip, err := container.Host(context.TODO())
 		if err != nil {
-			panic(err)
+			c.log.Fatal("Failed to get container host", zap.Error(err))
 		}
 		mappedPort, err := container.MappedPort(context.TODO(), "8080")
 		if err != nil {
-			panic(err)
+			c.log.Fatal("Failed to get mapped port", zap.Error(err))
 		}
-		uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-		c.mockServiceUri = uri
-		fmt.Println("Started on uri:", uri)
+		c.mockServiceURI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+		c.log.Info("Started mockservice", zap.String("uri", c.mockServiceURI))
+	})
+
+	ctx.AfterSuite(func() {
+		if c.container != nil {
+			c.log.Info("Terminating container", zap.String("container_id", c.container.GetContainerID()))
+			if err := c.container.Terminate(context.TODO()); err != nil {
+				c.log.Error("failed to terminate container", zap.Error(err))
+			}
+		}
 	})
 }
 
@@ -86,19 +109,24 @@ func (c *suiteContext) InitializeScenario(ctx *godog.ScenarioContext) {
 }
 
 func (s *scenarioContext) createSteps(ctx *godog.ScenarioContext) {
-	ctx.Step("^something happens$", func() error {
-		fmt.Println("fail")
-		resp, err := http.DefaultClient.Get(s.mockServiceUri + "/admin/definition")
-		if err != nil {
-			return fmt.Errorf("get request to definitions: %w", err)
-		}
+	ctx.Step("^a definition is registered with payload$", s.aDefinitionIsRegisteredWithPayload)
+}
 
-		defer resp.Body.Close()
-		bs, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("reading body: %w", err)
-		}
-		fmt.Println("Got body", string(bs))
-		return nil
-	})
+func (s *scenarioContext) aDefinitionIsRegisteredWithPayload(body *godog.DocString) error {
+	// TODO: Pull some of this logic out to a service
+	resp, err := http.DefaultClient.Post(s.mockServiceURI+"/admin/definition", "application/json", strings.NewReader(body.Content))
+	if err != nil {
+		return fmt.Errorf("POST to /admin/definition: %w", err)
+	}
+	defer resp.Body.Close()
+	respBs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received a non 200 status code: %d", resp.StatusCode)
+	}
+	s.log.Info("received", zap.ByteString("body", respBs))
+	return nil
 }
