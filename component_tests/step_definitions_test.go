@@ -3,14 +3,12 @@ package main_test
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
+	"github.com/go-resty/resty/v2"
 	"github.com/spf13/pflag"
 	tc "github.com/testcontainers/testcontainers-go"
 	"go.uber.org/zap"
@@ -53,6 +51,7 @@ type suiteContext struct {
 	container      tc.Container
 	log            *zap.Logger
 	mockServiceURI string
+	api            api
 }
 
 func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
@@ -62,7 +61,6 @@ func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 				Context: "../",
 			},
 			ExposedPorts: []string{"8080:8080"},
-			// WaitingFor:   wait.ForHTTP("/admin/definition"),
 		}
 
 		container, err := tc.GenericContainer(context.TODO(), tc.GenericContainerRequest{
@@ -85,6 +83,14 @@ func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 		}
 		c.mockServiceURI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 		c.log.Info("Started mockservice", zap.String("uri", c.mockServiceURI))
+
+		c.api = api{
+			client: resty.
+				New().
+				SetBaseURL(c.mockServiceURI).
+				SetHeader("Content-Type", "application/json"),
+			apiURI: c.mockServiceURI,
+		}
 	})
 
 	ctx.AfterSuite(func() {
@@ -113,20 +119,10 @@ func (s *scenarioContext) createSteps(ctx *godog.ScenarioContext) {
 }
 
 func (s *scenarioContext) aDefinitionIsRegisteredWithPayload(body *godog.DocString) error {
-	// TODO: Pull some of this logic out to a service
-	resp, err := http.DefaultClient.Post(s.mockServiceURI+"/admin/definition", "application/json", strings.NewReader(body.Content))
+	id, err := s.api.RegisterDefinition(body.Content)
 	if err != nil {
-		return fmt.Errorf("POST to /admin/definition: %w", err)
+		return err
 	}
-	defer resp.Body.Close()
-	respBs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received a non 200 status code: %d", resp.StatusCode)
-	}
-	s.log.Info("received", zap.ByteString("body", respBs))
+	s.log.Info("received", zap.Stringer("id", id))
 	return nil
 }
