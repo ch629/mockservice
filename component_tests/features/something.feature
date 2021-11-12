@@ -16,3 +16,7 @@ Feature: Testing
           }
         }
         """
+        When a request is sent with method "POST", path "/abc" and payload
+        """
+        {}
+        """

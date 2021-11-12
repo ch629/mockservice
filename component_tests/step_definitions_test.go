@@ -113,7 +113,13 @@ func (c *suiteContext) InitializeScenario(ctx *godog.ScenarioContext) {
 }
 
 func (s *scenarioContext) createSteps(ctx *godog.ScenarioContext) {
+	// Given
 	ctx.Step("^a definition is registered with payload$", s.aDefinitionIsRegisteredWithPayload)
+
+	// When
+	// ctx.Step(`^a request is sent with method "([^"]*])" and payload$`, s.aRequestIsSentWithMethodAndPayload)
+	ctx.Step(`^a request is sent with method "([^"]*)", path "([^"]*)" and payload$`, s.aRequestIsSentWithMethodPathAndPayload)
+	// Then
 }
 
 func (s *scenarioContext) aDefinitionIsRegisteredWithPayload(body *godog.DocString) error {
@@ -122,5 +128,14 @@ func (s *scenarioContext) aDefinitionIsRegisteredWithPayload(body *godog.DocStri
 		return err
 	}
 	s.log.Info("received", zap.Stringer("id", id))
+	return nil
+}
+
+func (s *scenarioContext) aRequestIsSentWithMethodPathAndPayload(method, path string, body *godog.DocString) error {
+	payload, err := s.api.SendRequest(method, path, body.Content)
+	if err != nil {
+		return err
+	}
+	s.log.Info("received", zap.String("payload", payload))
 	return nil
 }
