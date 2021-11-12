@@ -8,9 +8,8 @@ import (
 )
 
 func (s *server) writeJSON(rw http.ResponseWriter, value interface{}, status int) {
-	rw.WriteHeader(status)
-	// TODO: Check this is sent
 	rw.Header().Add("Content-Type", "application/json")
+	rw.WriteHeader(status)
 	if err := json.NewEncoder(rw).Encode(value); err != nil {
 		s.log.Error("failed to encode to ResponseWriter", zap.Error(err))
 	}
