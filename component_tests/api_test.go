@@ -9,10 +9,9 @@ import (
 
 type api struct {
 	client *resty.Client
-	apiURI string
 }
 
-func (a *api) RegisterDefinition(payload string) (uuid.UUID, error) {
+func (a *api) RegisterDefinition(payload string) (id uuid.UUID, err error) {
 	type response struct {
 		ID uuid.UUID `json:"id"`
 	}
@@ -22,15 +21,15 @@ func (a *api) RegisterDefinition(payload string) (uuid.UUID, error) {
 		SetBody(payload).
 		Post("/admin/definition")
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to register definition: %w", err)
+		return id, fmt.Errorf("failed to register definition: %w", err)
 	}
 
 	if resp.Error() != nil {
-		return uuid.Nil, fmt.Errorf("error from response: %w", resp.Error())
+		return id, fmt.Errorf("error from response: %w", resp.Error())
 	}
 
 	if resp.IsError() {
-		return uuid.Nil, fmt.Errorf("error status code from response, recieved: %d", resp.StatusCode())
+		return id, fmt.Errorf("error status code from response, recieved: %d", resp.StatusCode())
 	}
 
 	return resp.Result().(*response).ID, nil

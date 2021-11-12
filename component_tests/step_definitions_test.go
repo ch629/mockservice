@@ -20,6 +20,7 @@ var opts = godog.Options{
 	Format: "pretty",
 }
 
+// TODO: Pass in a flag to point to an already-running app
 func init() {
 	godog.BindCommandLineFlags("godog.", &opts)
 }
@@ -48,10 +49,9 @@ func TestMain(m *testing.M) {
 }
 
 type suiteContext struct {
-	container      tc.Container
-	log            *zap.Logger
-	mockServiceURI string
-	api            api
+	container tc.Container
+	log       *zap.Logger
+	api       api
 }
 
 func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
@@ -81,16 +81,14 @@ func (c *suiteContext) InitializeTestSuite(ctx *godog.TestSuiteContext) {
 		if err != nil {
 			c.log.Fatal("Failed to get mapped port", zap.Error(err))
 		}
-		c.mockServiceURI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-		c.log.Info("Started mockservice", zap.String("uri", c.mockServiceURI))
-
+		mockServiceURI := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 		c.api = api{
 			client: resty.
 				New().
-				SetBaseURL(c.mockServiceURI).
+				SetBaseURL(mockServiceURI).
 				SetHeader("Content-Type", "application/json"),
-			apiURI: c.mockServiceURI,
 		}
+		c.log.Info("Started mockservice", zap.String("uri", mockServiceURI))
 	})
 
 	ctx.AfterSuite(func() {
