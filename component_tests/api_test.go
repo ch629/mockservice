@@ -12,6 +12,12 @@ type api struct {
 	client *resty.Client
 }
 
+type apiResponse struct {
+	Body       string
+	StatusCode int
+	Headers    map[string][]string
+}
+
 func (a *api) RegisterDefinition(payload string) (id uuid.UUID, err error) {
 	type response struct {
 		ID uuid.UUID `json:"id"`
@@ -36,19 +42,31 @@ func (a *api) RegisterDefinition(payload string) (id uuid.UUID, err error) {
 	return resp.Result().(*response).ID, nil
 }
 
-func (a *api) SendRequest(method, path, payload string) (string, error) {
-	resp, err := a.client.R().SetBody(payload).SetResult(json.RawMessage{}).Execute(method, path)
+func (a *api) SendRequest(method, path, payload string) (*apiResponse, error) {
+	resp, err := a.client.
+		R().
+		SetBody(payload).
+		SetResult(json.RawMessage{}).
+		Execute(method, path)
 	if err != nil {
-		return "", fmt.Errorf("failed to register definition: %w", err)
+		return nil, fmt.Errorf("failed to register definition: %w", err)
 	}
 
 	if resp.Error() != nil {
-		return "", fmt.Errorf("error from response: %w", resp.Error())
+		return nil, fmt.Errorf("error from response: %w", resp.Error())
 	}
 
-	if resp.IsError() {
-		return "", fmt.Errorf("error status code from response, received: %d", resp.StatusCode())
-	}
+	return &apiResponse{
+		Body:       string(resp.Body()),
+		StatusCode: resp.StatusCode(),
+		Headers:    resp.Header(),
+	}, nil
+}
 
-	return string(resp.Body()), nil
+func (a *api) DeleteStub(stubID uuid.UUID) error {
+	_, err := a.client.R().SetPathParam("id", stubID.String()).Delete("/admin/definition/{id}")
+	if err != nil {
+		return fmt.Errorf("error from response: %w", err)
+	}
+	return nil
 }
