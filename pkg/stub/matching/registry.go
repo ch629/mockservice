@@ -8,7 +8,11 @@ import (
 
 var typeRegistry = make(map[string]func() FieldMatcher)
 
-func register(name string, constructor func() FieldMatcher) {
+func register(constructor func() FieldMatcher) {
+	registerNamed(constructor().Type(), constructor)
+}
+
+func registerNamed(name string, constructor func() FieldMatcher) {
 	if _, ok := typeRegistry[name]; ok {
 		panic(fmt.Errorf("type '%s' already registered", name))
 	}

@@ -1,8 +1,8 @@
 package matching
 
 func init() {
-	register("true", func() FieldMatcher { return &TrueMatcher{} })
-	register("false", func() FieldMatcher { return &FalseMatcher{} })
+	register(func() FieldMatcher { return &TrueMatcher{} })
+	register(func() FieldMatcher { return &FalseMatcher{} })
 }
 
 type TrueMatcher struct{}
@@ -20,7 +20,7 @@ func (m *TrueMatcher) UnmarshalJSON(bs []byte) error {
 }
 
 func (TrueMatcher) Type() string {
-	return "type"
+	return "true"
 }
 
 type FalseMatcher struct{}

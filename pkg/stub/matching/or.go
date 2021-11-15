@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	register("or", func() FieldMatcher { return &orMatcher{} })
+	register(func() FieldMatcher { return &orMatcher{} })
 }
 
 type orMatcher struct {

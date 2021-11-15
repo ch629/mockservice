@@ -8,11 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_simpleMatcher(t *testing.T) {
+func Test_Matcher(t *testing.T) {
 	for name, test := range map[string]struct {
-		json              string
-		matcherType       string
-		matchingStrings   []string
+		// Input JSON
+		json string
+		// The type of matcher the JSON should create
+		matcherType string
+		// Input strings which should be matched
+		matchingStrings []string
+		// Input strings which should not be matched
 		unmatchingStrings []string
 	}{
 		"EqualTo": {

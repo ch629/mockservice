@@ -16,7 +16,7 @@ func init() {
 		"starts_with",
 		"ends_with",
 	} {
-		register(name, func() FieldMatcher { return &simpleMatcher{} })
+		registerNamed(name, func() FieldMatcher { return &simpleMatcher{} })
 	}
 }
 

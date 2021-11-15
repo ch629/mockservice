@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	register("and", func() FieldMatcher { return &andMatcher{} })
+	register(func() FieldMatcher { return &andMatcher{} })
 }
 
 type andMatcher struct {
@@ -14,6 +14,10 @@ type andMatcher struct {
 }
 
 func (m andMatcher) Matches(field string) bool {
+	if len(m.matchers) == 0 {
+		return false
+	}
+
 	for _, m := range m.matchers {
 		if !m.Matches(field) {
 			return false
@@ -45,9 +49,9 @@ func (m *andMatcher) UnmarshalJSON(bs []byte) (err error) {
 	}
 
 	m.matchers = make([]FieldMatcher, len(andBlock.And))
-	// Unmarshal each Matcher inside of the or block
-	for idx, orField := range andBlock.And {
-		if m.matchers[idx], err = UnmarshalJSONToFieldMatcher(orField); err != nil {
+	// Unmarshal each Matcher inside of the and block
+	for idx, andField := range andBlock.And {
+		if m.matchers[idx], err = UnmarshalJSONToFieldMatcher(andField); err != nil {
 			return fmt.Errorf("matching.unmarshalJSON: %w", err)
 		}
 	}
