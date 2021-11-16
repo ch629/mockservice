@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/ch629/mockservice/pkg/recorder"
+	"github.com/ch629/mockservice/pkg/stub/request_matching"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -23,12 +24,13 @@ type Service interface {
 	Definitions() []Definition
 }
 
-// TODO: Pull this into a domain pkg
+// TODO: Should this have the JSON directly, or make a DTO?
 type Definition struct {
 	// TODO: Multiple request matchers so we can say which was closest?
-	Request  RequestMatcher
-	Response Response
-	ID       uuid.UUID
+	Request   request_matching.RequestMatcher `json:"request"`
+	Response  Response                        `json:"response"`
+	ID        uuid.UUID                       `json:"id"`
+	Templated bool                            `json:"templated,omitempty"`
 }
 
 func NewService(log *zap.Logger, recorder recorder.Service) Service {
@@ -89,8 +91,14 @@ func (s *service) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	for id, def := range s.definitions {
 		if def.Request.Matches(req) {
 			s.recorder.RecordStub(id)
-			if err := def.Response.WriteTo(rw); err != nil {
+			response, err := templateRequest(def, req)
+			if err != nil {
+				s.log.Error("failed to template response", zap.Error(err))
+				return
+			}
+			if err := response.WriteTo(rw); err != nil {
 				s.log.Error("failed to write response back", zap.Error(err))
+				return
 			}
 			s.log.Debug("request matched", zap.Stringer("stub", id))
 			return

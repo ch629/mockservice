@@ -1,0 +1,16 @@
+{
+  "request": {
+    "path": {
+      "equal_to": "/templated"
+    }
+  },
+  "response": {
+    "templated": true,
+    "body": {
+      "id": "{{ randomUUID }}",
+      "foo": "{{ json .Body '$.foo' }}",
+      "method": "{{ .Method }}"
+    },
+    "status": 200
+  }
+}

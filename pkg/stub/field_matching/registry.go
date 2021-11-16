@@ -1,4 +1,4 @@
-package matching
+package field_matching
 
 import (
 	"encoding/json"

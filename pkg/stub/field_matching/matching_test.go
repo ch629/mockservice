@@ -1,10 +1,10 @@
-package matching_test
+package field_matching_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ch629/mockservice/pkg/stub/matching"
+	"github.com/ch629/mockservice/pkg/stub/field_matching"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,7 +63,7 @@ func Test_Matcher(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			matcher, err := matching.UnmarshalJSONToFieldMatcher([]byte(test.json))
+			matcher, err := field_matching.UnmarshalJSONToFieldMatcher([]byte(test.json))
 			require.NoError(t, err)
 
 			require.Equal(t, test.matcherType, matcher.Type())

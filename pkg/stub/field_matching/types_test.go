@@ -1,4 +1,4 @@
-package matching
+package field_matching
 
 func init() {
 	register(func() FieldMatcher { return &TrueMatcher{} })

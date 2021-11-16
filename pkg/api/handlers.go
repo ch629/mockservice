@@ -9,7 +9,8 @@ import (
 	"github.com/ch629/mockservice/pkg/domain"
 	"github.com/ch629/mockservice/pkg/recorder"
 	"github.com/ch629/mockservice/pkg/stub"
-	"github.com/ch629/mockservice/pkg/stub/matching"
+	"github.com/ch629/mockservice/pkg/stub/field_matching"
+	"github.com/ch629/mockservice/pkg/stub/request_matching"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -17,8 +18,8 @@ import (
 // GET /definition
 func (s *server) listDefinitions() http.HandlerFunc {
 	type definitionDto struct {
-		Request stub.RequestMatcher `json:"request"`
-		ID      uuid.UUID           `json:"id"`
+		Request request_matching.RequestMatcher `json:"request"`
+		ID      uuid.UUID                       `json:"id"`
 	}
 	type response struct {
 		Definitions []definitionDto `json:"definitions"`
@@ -61,19 +62,20 @@ func (s *server) registerDefinition() http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var req request
+		json.NewDecoder(r.Body).Decode(&req)
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			s.writeError(rw, fmt.Errorf("received invalid payload: %s", err), http.StatusBadRequest)
 			return
 		}
 
-		fieldMatcher, err := matching.UnmarshalJSONToFieldMatcher(req.Request.Path)
+		fieldMatcher, err := field_matching.UnmarshalJSONToFieldMatcher(req.Request.Path)
 		if err != nil {
 			s.writeError(rw, err, http.StatusBadRequest)
 			return
 		}
 
 		id := s.stubService.AddStub(stub.Definition{
-			Request: stub.NewLoggedMatcher(s.log, stub.NewPathMatcher(fieldMatcher)),
+			Request: request_matching.NewLoggedMatcher(s.log, request_matching.NewPathMatcher(fieldMatcher)),
 			ID:      uuid.New(),
 			Response: stub.Response{
 				Headers: req.Response.Headers,

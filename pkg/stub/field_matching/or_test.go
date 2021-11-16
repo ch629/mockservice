@@ -1,43 +1,43 @@
-package matching_test
+package field_matching_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ch629/mockservice/pkg/stub/matching"
+	"github.com/ch629/mockservice/pkg/stub/field_matching"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_or_Matches(t *testing.T) {
 	for name, test := range map[string]struct {
-		matchers      []matching.FieldMatcher
+		matchers      []field_matching.FieldMatcher
 		expectedValue bool
 	}{
 		"No matchers": {
-			matchers:      []matching.FieldMatcher{},
+			matchers:      []field_matching.FieldMatcher{},
 			expectedValue: false,
 		},
 		"True matcher": {
-			matchers:      []matching.FieldMatcher{&matching.TrueMatcher{}},
+			matchers:      []field_matching.FieldMatcher{&field_matching.TrueMatcher{}},
 			expectedValue: true,
 		},
 		"False matcher": {
-			matchers:      []matching.FieldMatcher{&matching.FalseMatcher{}},
+			matchers:      []field_matching.FieldMatcher{&field_matching.FalseMatcher{}},
 			expectedValue: false,
 		},
 		"Many matchers": {
-			matchers: []matching.FieldMatcher{
-				&matching.FalseMatcher{},
-				&matching.FalseMatcher{},
-				&matching.FalseMatcher{},
-				&matching.FalseMatcher{},
-				&matching.TrueMatcher{},
+			matchers: []field_matching.FieldMatcher{
+				&field_matching.FalseMatcher{},
+				&field_matching.FalseMatcher{},
+				&field_matching.FalseMatcher{},
+				&field_matching.FalseMatcher{},
+				&field_matching.TrueMatcher{},
 			},
 			expectedValue: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			matcher := matching.OrMatcher(test.matchers...)
+			matcher := field_matching.OrMatcher(test.matchers...)
 			require.Equal(t, test.expectedValue, matcher.Matches(""))
 		})
 	}
@@ -46,7 +46,7 @@ func Test_or_Matches(t *testing.T) {
 func Test_or_MarshalUnmarshal(t *testing.T) {
 	for name, test := range map[string]struct {
 		expectedJSON string
-		matchers     []matching.FieldMatcher
+		matchers     []field_matching.FieldMatcher
 	}{
 		"Multiple matchers": {
 			expectedJSON: `
@@ -57,23 +57,23 @@ func Test_or_MarshalUnmarshal(t *testing.T) {
 					{"false": false}
 				]
 			}`,
-			matchers: []matching.FieldMatcher{&matching.TrueMatcher{}, &matching.FalseMatcher{}, &matching.FalseMatcher{}},
+			matchers: []field_matching.FieldMatcher{&field_matching.TrueMatcher{}, &field_matching.FalseMatcher{}, &field_matching.FalseMatcher{}},
 		},
 		"Empty matchers": {
 			expectedJSON: `
 			{ 
 				"or": []
 			}`,
-			matchers: []matching.FieldMatcher{},
+			matchers: []field_matching.FieldMatcher{},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			matcher := matching.OrMatcher(test.matchers...)
+			matcher := field_matching.OrMatcher(test.matchers...)
 			bs, err := json.Marshal(matcher)
 			require.NoError(t, err)
 			require.JSONEq(t, test.expectedJSON, string(bs))
 
-			newMatcher := matching.OrMatcher()
+			newMatcher := field_matching.OrMatcher()
 			err = newMatcher.UnmarshalJSON(bs)
 			require.NoError(t, err)
 			require.Equal(t, matcher, newMatcher)

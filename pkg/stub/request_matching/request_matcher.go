@@ -1,11 +1,11 @@
-package stub
+package request_matching
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/ch629/mockservice/pkg/domain"
-	"github.com/ch629/mockservice/pkg/stub/matching"
+	"github.com/ch629/mockservice/pkg/stub/field_matching"
 	"go.uber.org/zap"
 )
 
@@ -20,22 +20,22 @@ type (
 	}
 
 	pathMatcher struct {
-		fieldMatcher matching.FieldMatcher
+		fieldMatcher field_matching.FieldMatcher
 	}
 
 	queryParameterMatcher struct {
-		fieldMatcher matching.FieldMatcher
+		fieldMatcher field_matching.FieldMatcher
 		key          string
 	}
 )
 
-func NewPathMatcher(fieldMatcher matching.FieldMatcher) RequestMatcher {
+func NewPathMatcher(fieldMatcher field_matching.FieldMatcher) RequestMatcher {
 	return &pathMatcher{
 		fieldMatcher: fieldMatcher,
 	}
 }
 
-func NewQueryParamterMatcher(key string, matcher matching.FieldMatcher) RequestMatcher {
+func NewQueryParamterMatcher(key string, matcher field_matching.FieldMatcher) RequestMatcher {
 	return &queryParameterMatcher{
 		key:          key,
 		fieldMatcher: matcher,
